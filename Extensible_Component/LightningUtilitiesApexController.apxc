@@ -1,0 +1,70 @@
+public with sharing class LightningUtilitiesApexController {
+
+    @AuraEnabled
+    public static List<SObject> getInfo(String selectString, String fromString, String whereString, String orderByString, Integer limitQty) {
+        String listType = '';
+        String queryString;
+        List<SObject> retVal;
+        if(fromString==null||fromString==''){
+            return null;
+        }
+        listType = 'List<'+fromString+'>';
+        retVal = (List<SObject>)Type.forName(listType).newInstance();
+        if(selectString==null){
+            return retVal;
+        }
+        queryString = 'SELECT '+sanitzieSelectString(selectString)+' FROM '+sanitzieFromString(fromString);
+        if(orderByString==null){
+            orderByString ='';
+        }
+        if(whereString==null){
+            whereString ='';
+        }else{
+        	queryString+=' WHERE '+sanitzieWhereString(whereString)+' ORDER BY '+sanitizeorderByString(orderByString, selectString);
+        }
+        if(limitQty!=null){
+			queryString+='LIMIT '+limitQty;
+		}
+        System.debug(queryString);
+        retVal = Database.query(queryString);
+        return retVal;
+    }
+
+    private static String sanitzieSelectString(String inputString){
+        //should never be a single-quote in this string, as field names do not have single-quotes
+        List<String> inputList = inputString.split('\'');
+        return String.join(inputList, '');
+    }
+
+    private static String sanitzieFromString(String inputString){
+        //should never be a single-quote in this string, as object names do not have single-quotes
+        List<String> inputList = inputString.split('\'');
+        return String.join(inputList, '');
+    }
+
+    private static String sanitzieWhereString(String inputString){
+        Boolean isLike = inputString.split(' like ').size()>1;
+        Boolean isIn = inputString.split(' in ').size()>1;
+        if(!isLike && !isIn){
+            //is =
+        }
+        //AND
+        //x = y
+        //x in y
+        //x like y
+        return inputString;
+    }
+
+    private static String sanitizeorderByString(String inputString, String selectString){
+        Boolean isFound = false;
+        List<String> listOfFields = selectString.split('[,]{1}[\\s]?');
+        List<String> sortField = inputString.toUpperCase().split('ORDER BY');
+        for(String s: listOfFields){
+            if(sortField[0].equals(s)){
+                isFound = true;
+            }
+        }
+        //return 'ORDER BY '+sortField[0]+' WITH SECURITY_ENFORCED';BETA ONLY
+        return 'ORDER BY '+sortField[0];
+    }
+}
