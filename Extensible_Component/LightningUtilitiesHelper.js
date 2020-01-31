@@ -29,7 +29,6 @@
         action.setParams(vars);
         action.setCallback(this, function(response) {
             var state = response.getState();
-            console.log(response);
             if (state === "SUCCESS" && !$A.util.isEmpty(onSuccess)) {
                 onSuccess(response);
             }else if(state !== "SUCCESS" && !$A.util.isEmpty(onFailure)){
